@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"xmbsmdsj.com/logflog/flogger"
+	"github.com/wylswz/logflog/flogger"
 )
 
 func main() {
