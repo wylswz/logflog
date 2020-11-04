@@ -3,7 +3,9 @@ package flogger
 import (
 	"bytes"
 	"io"
+	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
@@ -29,11 +31,43 @@ func initPosition(f *os.File) int64 {
 	return 0
 }
 
-func handleEvent(e fsnotify.Event) {
+func isDir(path string) bool {
+	fi, err := os.Stat(path)
+	panicOnErr(err)
+	return fi.IsDir()
+}
+
+// WalkDir list all files in directory
+func walkDir(path string) []string {
+	files := make([]string, 0)
+	filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if err != nil && err != filepath.SkipDir {
+			log.Panic(err)
+		} else {
+
+			if isDir(path) {
+				files = append(files, path)
+			}
+		}
+
+		return nil
+	})
+
+	return files
+}
+
+func handleEvent(e fsnotify.Event, watcher *fsnotify.Watcher) {
+	name := e.Name
+
+	if isDir(name) {
+		for _, v := range walkDir(name) {
+			watcher.Add(v)
+		}
+	}
+
 	if e.Op&fsnotify.Write != fsnotify.Write {
 		return
 	}
-	name := e.Name
 	file, ok := fileMap[name]
 
 	var err error
@@ -88,7 +122,7 @@ func FLog(filelist []string) {
 				if !ok {
 					return
 				}
-				handleEvent(event)
+				handleEvent(event, watcher)
 				// Process event here
 			case _, ok := <-watcher.Errors:
 				if !ok {
