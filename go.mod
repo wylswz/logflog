@@ -1,4 +1,4 @@
-module xmbsmdsj.com/logflog
+module github.com/wylswz/logflog
 
 go 1.14
 
